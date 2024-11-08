@@ -7,36 +7,33 @@ import api.item.*
 import domain.*
 import domain.events.EventError
 import domain.item.*
-import implementation.auth.*
 
-final case class PrivateApiHandler(authService: AuthService, itemService: ItemService):
+final case class PrivateApiHandler(itemService: ItemService):
 
-  def createItem(authHeader: Option[String], input: CreateItemInput[ValidationStatus.NonValidated.type])
-      : IO[AuthError | RepositoryError.DbEx | RepositoryError.Conflict | RepositoryError.ConversionError | EventError | NonEmptyChunk[ItemValidationError], ItemResult] =
+  def createItem(input: CreateItemInput[ValidationStatus.NonValidated.type])
+      : IO[RepositoryError.DbEx | RepositoryError.Conflict | RepositoryError.ConversionError | EventError | NonEmptyChunk[ItemValidationError], ItemResult] =
     for {
-      _              <- authService.validateJwt(authHeader.getOrElse(""))
       validatedInput <- ZIO.fromEither(ItemValidator.validate(input))
       item           <- itemService.addItem(validatedInput)
     } yield ItemResult.fromDomain(item)
 
-  def updateItem(authHeader: Option[String], id: ItemId, input: UpdateItemInput[ValidationStatus.NonValidated.type])
+  def updateItem(id: ItemId, input: UpdateItemInput[ValidationStatus.NonValidated.type])
       : IO[
-        AuthError | RequestError | RepositoryError.DbEx | RepositoryError.MissingEntity | RepositoryError.ConversionError | NonEmptyChunk[ItemValidationError],
+        RequestError | RepositoryError.DbEx | RepositoryError.MissingEntity | RepositoryError.ConversionError | NonEmptyChunk[ItemValidationError],
         ItemResult,
       ] =
     for {
-      _              <- authService.validateJwt(authHeader.getOrElse(""))
       validatedInput <- ZIO.fromEither(ItemValidator.validate(input))
       item           <- itemService.updateItem(id, validatedInput)
     } yield ItemResult.fromDomain(item)
 
-  def deleteItem(authHeader: Option[String], id: ItemId)
-      : IO[AuthError | RequestError | RepositoryError.DbEx | RepositoryError.MissingEntity, Unit] =
-    authService.validateJwt(authHeader.getOrElse("")) *> itemService.deleteItem(id)
+  def deleteItem(id: ItemId)
+      : IO[RequestError | RepositoryError.DbEx | RepositoryError.MissingEntity, Unit] =
+    itemService.deleteItem(id)
 
-  def getItem(authHeader: Option[String], id: ItemId)
-      : IO[AuthError | RepositoryError.DbEx | RepositoryError.MissingEntity | RepositoryError.ConversionError | RequestError, ItemResult] =
-    authService.validateJwt(authHeader.getOrElse("")) *> itemService.getItemById(id).map(ItemResult.fromDomain(_))
+  def getItem(id: ItemId)
+      : IO[RepositoryError.DbEx | RepositoryError.MissingEntity | RepositoryError.ConversionError | RequestError, ItemResult] =
+    itemService.getItemById(id).map(ItemResult.fromDomain)
 
 object PrivateApiHandler:
-  val layer: RLayer[AuthService & ItemService, PrivateApiHandler] = ZLayer.derive[PrivateApiHandler]
+  val layer: RLayer[ItemService, PrivateApiHandler] = ZLayer.derive[PrivateApiHandler]

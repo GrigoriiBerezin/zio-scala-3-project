@@ -8,7 +8,6 @@ import zio.json.{ uuid => _, * }
 
 import domain.*
 import domain.events.EventError
-import implementation.auth.AuthError
 import implementation.json.JsonDecodingError
 
 import java.util.UUID
@@ -28,7 +27,7 @@ extension [R, E, A: JsonEncoder](effect: ZIO[R, E, A])
 extension [R](
     effect: ZIO[
       R,
-      AuthError | RequestError | JsonDecodingError | RepositoryError.DbEx | RepositoryError.Conflict |
+      RequestError | JsonDecodingError | RepositoryError.DbEx | RepositoryError.Conflict |
         RepositoryError.MissingEntity | RepositoryError.ConversionError | EventError |
         NonEmptyChunk[GenericValidationError],
       Response,
@@ -36,7 +35,6 @@ extension [R](
   )
   def handleErrors: URIO[R, Response] = effect
     .tapError {
-      case err: AuthError                             => ZIO.logDebug(s"AuthError")
       case err: RequestError                          => ZIO.logWarning(s"RequestError: ${err.message.getOrElse("no message")}")
       case err: JsonDecodingError                     => ZIO.logWarning(s"JsonDecodingError: ${err.message}")
       case err: NonEmptyChunk[GenericValidationError] => ZIO.logDebug(s"ValidationErrors")
@@ -45,7 +43,6 @@ extension [R](
       case err                                        => ZIO.logError(s"$err")
     }
     .catchAll {
-      case err: AuthError                             => ZIO.succeed(ErrorResponse.unauthorized)
       case err: NonEmptyChunk[GenericValidationError] => ZIO.succeed(ErrorResponse.fromValidationErrors(err))
       case err: (RequestError | JsonDecodingError)    => ZIO.succeed(ErrorResponse.badRequest)
       case err: RepositoryError.Conflict              => ZIO.succeed(ErrorResponse.conflict)

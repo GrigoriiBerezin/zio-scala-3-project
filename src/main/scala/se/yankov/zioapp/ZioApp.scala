@@ -9,11 +9,14 @@ import zio.logging.backend.SLF4J
 import api.*
 import implementation.postgres.Migration
 
+import se.yankov.zioapp.implementation.auth.AuthService
+
 object ZioApp extends ZIOAppDefault:
 
   override val bootstrap: ZLayer[ZIOAppArgs, Any, Any] = Runtime.removeDefaultLoggers >>> SLF4J.slf4j
 
-  private val server: RIO[PublicApiHandler & PrivateApiHandler & InternalApiHandler & AppConfig, Nothing] =
+  private val server
+      : RIO[PublicApiHandler & PrivateApiHandler & InternalApiHandler & ConfigEnv & AuthService, Nothing] =
     (Routes
       .fromIterable(
         Chunk(
@@ -32,7 +35,7 @@ object ZioApp extends ZIOAppDefault:
   override val run: UIO[ExitCode] =
     (Migration.run *> server)
       .provide(
-        AppConfig.layer >+>
+        AuthService.layer ++ AppConfig.layer >+>
           (implementation.layer >+> domain.layer >>> (PublicApiHandler.layer ++ PrivateApiHandler.layer ++ InternalApiHandler.layer))
       )
       .foldCauseZIO(
