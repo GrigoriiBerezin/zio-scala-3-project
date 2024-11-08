@@ -12,8 +12,7 @@ import zio.*
 final case class AuthService():
 
   def validateJwt(token: String): IO[AuthError, Unit] = // construct a User instead of Unit
-    if (token.isBlank) ZIO.fail(AuthError())
-    else ZIO.unit
+    ZIO.when(token.isBlank)(ZIO.fail(AuthError())).unit
 
 object AuthService:
   val layer: ULayer[AuthService] = ZLayer.succeed(AuthService())

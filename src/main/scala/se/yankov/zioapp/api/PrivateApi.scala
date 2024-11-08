@@ -4,12 +4,12 @@ package api
 import zio.*
 import zio.http.*
 
-import domain.ValidationStatus
-import domain.item.{ CreateItemInput, ItemId, UpdateItemInput }
-import implementation.json.ItemCodecs.given
-import implementation.json.given
-
 import java.util.UUID
+
+import se.yankov.zioapp.domain.ValidationStatus
+import se.yankov.zioapp.domain.item.{ CreateItemInput, ItemId, UpdateItemInput }
+import se.yankov.zioapp.implementation.json.ItemCodecs.given
+import se.yankov.zioapp.implementation.json.given
 
 object PrivateApi:
 

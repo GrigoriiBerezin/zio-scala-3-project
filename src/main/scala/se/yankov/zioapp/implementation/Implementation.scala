@@ -1,18 +1,16 @@
 package se.yankov.zioapp
 package implementation
 
+import se.yankov.zioapp.domain.events.EventPublisher
+import se.yankov.zioapp.domain.item.ItemRepository
+import se.yankov.zioapp.implementation.auth.AuthService
+import se.yankov.zioapp.implementation.kafka.EventPublisherImplementation
+import se.yankov.zioapp.implementation.postgres.*
 import zio.RLayer
-
-import domain.events.EventPublisher
-import domain.item.ItemRepository
-import implementation.auth.AuthService
-import implementation.kafka.{ EventPublisherImplementation, KafkaConfig }
 
 import javax.sql.DataSource
 
-import postgres.*
-
 type ImplementationEnv = AuthService & ItemRepository & EventPublisher
 
-val layer: RLayer[DbConfig & KafkaConfig, ImplementationEnv] =
+val layer: RLayer[ConfigEnv, ImplementationEnv] =
   PostgresDataSource.layer >>> ItemRepositoryImplementation.layer ++ AuthService.layer ++ EventPublisherImplementation.layer

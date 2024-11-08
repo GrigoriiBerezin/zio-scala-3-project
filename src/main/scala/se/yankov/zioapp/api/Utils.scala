@@ -20,7 +20,7 @@ extension (request: Request)
     .mapError(err => RequestError(Some(err.getMessage)))
     .flatMap(input => ZIO.fromEither(input.fromJson[A]).mapError(JsonDecodingError(_)))
 
-extension [R, E](effect: URIO[R, String]) def toTextResponse: URIO[R, Response] = effect.map(Response.text(_))
+extension [R](effect: URIO[R, String]) def toTextResponse: URIO[R, Response] = effect.map(Response.text(_))
 
 extension [R, E, A: JsonEncoder](effect: ZIO[R, E, A])
   def toJsonResponse: ZIO[R, E, Response] = effect.map(x => Response.json(x.toJson))
@@ -59,6 +59,6 @@ val requireContentType: HandlerAspect[Any, Unit] =
     .apply(req => req.headers.get(Header.ContentType).exists(_.mediaType == MediaType.application.json))
 
 def pathCodec[In, Out](using opq: Opq[In, Out], codec: PathCodec[In]): PathCodec[Out] =
-  codec.transform[Out](opq.pack(_))(opq.unpack)
+  codec.transform[Out](opq.pack)(opq.unpack)
 
 given PathCodec[UUID] = uuid("id")
